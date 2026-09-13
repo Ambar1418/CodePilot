@@ -27,7 +27,14 @@ Here is the JSON schema you must adhere to:
                 ],
                 response_format={"type": "json_object"},
             )
-            content = completion.choices[0].message.content
+            content = completion.choices[0].message.content.strip()
+            if content.startswith("```"):
+                lines = content.splitlines()
+                if lines[0].startswith("```"):
+                    lines = lines[1:]
+                if lines and lines[-1].startswith("```"):
+                    lines = lines[:-1]
+                content = "\n".join(lines).strip()
             return PlanResponse.model_validate_json(content)
         except Exception as e:
             raise RuntimeError(f"Failed to generate plan from LLM: {str(e)}")

@@ -10,13 +10,13 @@ class PlanRequest(BaseModel):
     task: str
 
 class PlanResponse(BaseModel):
-    task_summary: str
-    assumptions: List[str]
-    steps: List[str]
-    files_to_inspect: List[str]
+    task_summary: str = ""
+    assumptions: List[str] = []
+    steps: List[str] = []
+    files_to_inspect: List[str] = []
     search_queries: List[str] = []
-    potential_risks: List[str]
-    testing_strategy: List[str]
+    potential_risks: List[str] = []
+    testing_strategy: List[str] = []
     affected_files: List[str] = []
     affected_symbols: List[str] = []
     affected_tests: List[str] = []
