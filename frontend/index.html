@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodePilot — Autonomous AI Coding Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Navigation Header -->
+    <header class="navbar">
+      <div class="nav-brand">
+        <div class="logo-icon">🚀</div>
+        <span class="brand-title">CodePilot</span>
+        <span class="version-badge">v1.0 Production</span>
+      </div>
+      <div class="nav-actions">
+        <div id="auth-status" class="auth-status">
+          <span id="user-display" class="user-chip">Guest</span>
+          <button id="auth-btn" class="btn btn-sm btn-outline">Login</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="main-container">
+      <!-- Auth Modal -->
+      <div id="auth-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+          <div class="modal-header">
+            <h3 id="auth-title">Login to CodePilot</h3>
+            <button class="close-btn" onclick="closeAuthModal()">&times;</button>
+          </div>
+          <form id="auth-form" class="modal-form">
+            <div class="form-group">
+              <label for="auth-username">Username</label>
+              <input type="text" id="auth-username" required placeholder="developer">
+            </div>
+            <div id="email-group" class="form-group hidden">
+              <label for="auth-email">Email</label>
+              <input type="email" id="auth-email" placeholder="dev@example.com">
+            </div>
+            <div class="form-group">
+              <label for="auth-password">Password</label>
+              <input type="password" id="auth-password" required placeholder="••••••••">
+            </div>
+            <div id="auth-error" class="error-banner hidden"></div>
+            <div class="form-actions">
+              <button type="submit" id="auth-submit-btn" class="btn btn-primary btn-block">Login</button>
+            </div>
+            <div class="toggle-mode">
+              <span id="auth-toggle-text">Need an account?</span>
+              <a href="#" id="auth-toggle-btn">Register</a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Left Column: Task Submission Form -->
+      <section class="column sidebar-column">
+        <div class="card glass-card">
+          <div class="card-header">
+            <h2>Start New Task</h2>
+          </div>
+          <form id="task-form" class="task-form">
+            <div class="form-group">
+              <label for="repo-path">Repository Path</label>
+              <input type="text" id="repo-path" required placeholder="/path/to/git/repository" value="/Users/prashant/Telegram Downloads/AMBAR_WORK/CodePilot">
+            </div>
+            <div class="form-group">
+              <label for="task-desc">Task Instructions</label>
+              <textarea id="task-desc" rows="4" required placeholder="Describe the feature or fix needed..."></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group col-half">
+                <label for="sandbox-type">Sandbox Execution</label>
+                <select id="sandbox-type">
+                  <option value="local">Local venv</option>
+                  <option value="docker">Docker Hardened</option>
+                  <option value="mock">Mock Sandbox</option>
+                </select>
+              </div>
+              <div class="form-group col-half">
+                <label for="test-command">Test Command</label>
+                <input type="text" id="test-command" placeholder="pytest -q" value="venv/bin/pytest -q">
+              </div>
+            </div>
+            <button type="submit" id="submit-task-btn" class="btn btn-primary btn-block">
+              <span>Run Pipeline</span> ⚡
+            </button>
+          </form>
+        </div>
+
+        <!-- System Health & Metrics -->
+        <div class="card glass-card metrics-card">
+          <div class="card-header">
+            <h3>System Status</h3>
+            <span id="system-status-indicator" class="status-dot dot-online"></span>
+          </div>
+          <div class="metrics-grid">
+            <div class="metric-item">
+              <span class="metric-label">Engine</span>
+              <span class="metric-value">Active</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Isolation</span>
+              <span class="metric-value">Worktree</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Sandbox</span>
+              <span class="metric-value">Hardened</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Secrets</span>
+              <span class="metric-value">Shielded</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Dashboard & Active Change Details -->
+      <section class="column main-column">
+        <!-- Changes List Dashboard -->
+        <div class="card glass-card">
+          <div class="card-header flex-between">
+            <h2>Recent Changes</h2>
+            <button id="refresh-changes-btn" class="btn btn-sm btn-outline">Refresh</button>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Task</th>
+                  <th>Status</th>
+                  <th>Attempts</th>
+                  <th>Files</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="changes-table-body">
+                <tr>
+                  <td colspan="6" class="text-center text-muted">No changes recorded yet. Submit a task above.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Selected Change Detail View -->
+        <div id="change-detail-section" class="card glass-card hidden">
+          <div class="card-header flex-between">
+            <div>
+              <h2 id="detail-change-title">Change Details</h2>
+              <span id="detail-change-id" class="mono-id">--</span>
+            </div>
+            <div id="detail-status-badge" class="badge">--</div>
+          </div>
+
+          <!-- Progress / Timeline Bar -->
+          <div class="pipeline-progress">
+            <div class="step-item" id="step-CREATED"><div class="step-dot"></div><span>Created</span></div>
+            <div class="step-item" id="step-PLANNING"><div class="step-dot"></div><span>Planning</span></div>
+            <div class="step-item" id="step-SEARCHING"><div class="step-dot"></div><span>RAG</span></div>
+            <div class="step-item" id="step-CODING"><div class="step-dot"></div><span>Coding</span></div>
+            <div class="step-item" id="step-VALIDATING"><div class="step-dot"></div><span>Validation</span></div>
+            <div class="step-item" id="step-READY_FOR_APPROVAL"><div class="step-dot"></div><span>Approval</span></div>
+          </div>
+
+          <!-- Tab Navigation -->
+          <div class="tabs-nav">
+            <button class="tab-btn active" data-tab="tab-overview">Overview & Validation</button>
+            <button class="tab-btn" data-tab="tab-impact">Code Changes & Impact</button>
+            <button class="tab-btn" data-tab="tab-diff">Diff Viewer</button>
+            <button class="tab-btn" data-tab="tab-audit">Audit Logs</button>
+          </div>
+
+          <!-- Tab 1: Overview -->
+          <div id="tab-overview" class="tab-content active">
+            <div class="detail-grid">
+              <div class="detail-box">
+                <h4>Validation Result</h4>
+                <div id="validation-output-box" class="code-box">
+                  <span class="text-muted">Awaiting validation results...</span>
+                </div>
+              </div>
+              <div class="detail-box">
+                <h4>Debug Diagnosis / Attempts</h4>
+                <div id="debug-diagnosis-box" class="code-box">
+                  <span class="text-muted">No debug attempts required.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Approval Action Banner -->
+            <div id="approval-banner" class="action-banner hidden">
+              <div class="banner-info">
+                <h3>Ready for Review</h3>
+                <p>All sandbox tests passed successfully. Review the diff before committing.</p>
+              </div>
+              <div class="banner-actions">
+                <button id="reject-btn" class="btn btn-danger">Reject & Rollback</button>
+                <button id="approve-btn" class="btn btn-success">Approve & Commit</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 2: Impact Analysis & Symbol Graph -->
+          <div id="tab-impact" class="tab-content">
+            <div class="impact-summary-card">
+              <div class="flex-between">
+                <h4>Change Risk Level</h4>
+                <span id="impact-risk-badge" class="badge">LOW</span>
+              </div>
+              <p id="impact-summary-text" class="text-muted" style="margin: 0.5rem 0;">Analyzing change impact...</p>
+            </div>
+            <div class="detail-grid">
+              <div class="detail-box">
+                <h4>Affected Files</h4>
+                <div id="impact-files-box" class="code-box">--</div>
+              </div>
+              <div class="detail-box">
+                <h4>Affected Symbols</h4>
+                <div id="impact-symbols-box" class="code-box">--</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 3: Diff Viewer -->
+          <div id="tab-diff" class="tab-content">
+            <div class="diff-summary-bar">
+              <span id="diff-stats-files" class="diff-chip">0 files changed</span>
+              <span id="diff-stats-additions" class="diff-chip add">+0</span>
+              <span id="diff-stats-deletions" class="diff-chip del">-0</span>
+            </div>
+            <div id="diff-content-box" class="diff-box">
+              <pre id="diff-code">No diff available.</pre>
+            </div>
+          </div>
+
+          <!-- Tab 3: Audit Logs -->
+          <div id="tab-audit" class="tab-content">
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>Event</th>
+                    <th>Transition</th>
+                    <th>Attempt</th>
+                    <th>Outcome</th>
+                  </tr>
+                </thead>
+                <tbody id="audit-logs-body">
+                  <tr><td colspan="5" class="text-muted">No audit logs available.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

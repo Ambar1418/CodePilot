@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.env
+venv/
+.venv/
+.chroma/
+.pytest_cache/
+.codepilot_cache/
+codepilot.db
+*.db
+.DS_Store
+worktrees/
