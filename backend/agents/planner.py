@@ -35,6 +35,12 @@ Here is the JSON schema you must adhere to:
                 if lines and lines[-1].startswith("```"):
                     lines = lines[:-1]
                 content = "\n".join(lines).strip()
-            return PlanResponse.model_validate_json(content)
+            
+            raw_dict = json.loads(content)
+            for key in ["steps", "assumptions", "files_to_inspect", "search_queries", "potential_risks", "testing_strategy", "affected_files", "affected_symbols", "affected_tests"]:
+                if key in raw_dict and isinstance(raw_dict[key], list):
+                    raw_dict[key] = [str(x) for x in raw_dict[key] if x is not None]
+
+            return PlanResponse.model_validate(raw_dict)
         except Exception as e:
             raise RuntimeError(f"Failed to generate plan from LLM: {str(e)}")

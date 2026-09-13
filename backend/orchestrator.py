@@ -167,7 +167,7 @@ class CodePilotOrchestrator:
                 task_query=request.task,
                 target_files=plan.affected_files,
                 target_symbols=plan.affected_symbols,
-            )
+            )[:2]
 
             context_builder = RAGContextBuilder()
             rag_context = context_builder.build_context(ranked_results)

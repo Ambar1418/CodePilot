@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     app_name: str = "CodePilot API"
     groq_api_key: Optional[str] = None
-    llm_model: str = "llama-3.3-70b-versatile"
+    llm_model: str = "qwen/qwen3.8-27b"
 
     # Database
     database_url: str = "sqlite:///./codepilot.db"

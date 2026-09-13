@@ -17,16 +17,29 @@ class RAGContextBuilder:
         sorted_chunks = sorted(list(unique_chunks.values()), key=lambda x: (x.file_path, x.start_line))
         
         lines = ["Relevant repository code:\n"]
+        total_len = 0
+        max_chars = 3500
+
         for i, chunk in enumerate(sorted_chunks):
-            lines.append(f"[{i+1}]")
-            lines.append(f"File: {chunk.file_path}")
+            chunk_lines = [
+                f"[{i+1}]",
+                f"File: {chunk.file_path}",
+            ]
             if chunk.symbol_name:
-                lines.append(f"Symbol: {chunk.symbol_name}")
-            lines.append(f"Type: {chunk.chunk_type}")
-            lines.append(f"Lines: {chunk.start_line}-{chunk.end_line}")
-            lines.append(f"Similarity: {chunk.score:.2f}\n")
-            lines.append("```python")
-            lines.append(chunk.content)
-            lines.append("```\n")
-            
+                chunk_lines.append(f"Symbol: {chunk.symbol_name}")
+            chunk_lines.extend([
+                f"Type: {chunk.chunk_type}",
+                f"Lines: {chunk.start_line}-{chunk.end_line}",
+                f"Similarity: {chunk.score:.2f}\n",
+                "```python",
+                chunk.content,
+                "```\n",
+            ])
+            chunk_str = "\n".join(chunk_lines)
+            if total_len + len(chunk_str) > max_chars:
+                lines.append("... [additional context truncated for token limits]")
+                break
+            lines.append(chunk_str)
+            total_len += len(chunk_str)
+
         return "\n".join(lines)
