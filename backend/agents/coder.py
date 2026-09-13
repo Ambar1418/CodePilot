@@ -77,7 +77,7 @@ CRITICAL RULES:
                 
             try:
                 completion = self.client.chat.completions.create(
-                    model="openai/gpt-oss-20b",
+                    model=settings.llm_model,
                     messages=messages,
                     tools=tools,
                     tool_choice="auto"

@@ -13,14 +13,14 @@ class PlannerAgent:
     def generate_plan(self, task: str) -> PlanResponse:
         system_prompt = f"""You are the Planner Agent for CodePilot, an Autonomous AI Software Engineer.
 Your job is to analyze a given coding task and generate a structured implementation plan.
-The output MUST exactly match the required structured JSON format.
+DO NOT invoke or output any tool calls or function calls. Output ONLY a valid JSON object matching the schema below.
 Here is the JSON schema you must adhere to:
 {PlanResponse.model_json_schema()}
 """
         
         try:
             completion = self.client.chat.completions.create(
-                model="openai/gpt-oss-20b",
+                model=settings.llm_model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": task}

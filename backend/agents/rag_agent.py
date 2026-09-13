@@ -53,7 +53,7 @@ Here is the JSON schema you must adhere to:
         
         try:
             completion = self.client.chat.completions.create(
-                model="openai/gpt-oss-20b",
+                model=settings.llm_model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"Context:\n{context_str}\n\nQuestion: {request.query}"}

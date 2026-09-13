@@ -36,7 +36,7 @@ Sandbox STDERR:
 
         try:
             completion = self.client.chat.completions.create(
-                model="openai/gpt-oss-20b",
+                model=settings.llm_model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_message}
