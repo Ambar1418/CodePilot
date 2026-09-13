@@ -30,21 +30,35 @@ CRITICAL RULES:
 5. You CANNOT submit final code unless you have successfully executed tests and they passed (Exit Code: 0).
 """
         
-        tools = registry.get_tools_schema()
+        essential_tool_names = {"read_file", "write_file", "execute_command", "run_tests"}
+        tools = [t for t in registry.get_tools_schema() if t.get("function", {}).get("name") in essential_tool_names]
         
-        # Add submit tool
         tools.append({
             "type": "function",
             "function": {
                 "name": "submit_final_code",
                 "description": "Submit the final proposed code changes and conclude the task.",
-                "parameters": CodeResponse.model_json_schema()
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "summary": {"type": "string", "description": "Summary of changes made"},
+                        "files_to_modify": {"type": "array", "items": {"type": "string"}},
+                        "files_to_create": {"type": "array", "items": {"type": "string"}},
+                        "files_to_delete": {"type": "array", "items": {"type": "string"}},
+                        "reasoning": {"type": "string", "description": "Technical reasoning"}
+                    },
+                    "required": ["summary", "files_to_modify", "reasoning"]
+                }
             }
         })
 
+        plan_summary = request.plan.task_summary
+        plan_steps = "\n".join(f"- {step}" for step in request.plan.steps) if getattr(request.plan, 'steps', None) else ""
+        plan_text = f"{plan_summary}\nSteps:\n{plan_steps}" if plan_steps else plan_summary
+
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Task: {request.task}\n\nPlan: {request.plan.model_dump_json()}\n\nInitial Context: {request.code_context}"}
+            {"role": "user", "content": f"Task: {request.task}\n\nPlan:\n{plan_text}\n\nInitial Context:\n{request.code_context}"}
         ]
 
         iterations = 0
@@ -127,6 +141,10 @@ CRITICAL RULES:
                         continue
                     else:
                         # Tests passed, allow submission
+                        args.setdefault("changes", [])
+                        args.setdefault("files_to_create", [])
+                        args.setdefault("files_to_delete", [])
+                        args.setdefault("testing_notes", "Passed automated unit tests")
                         parsed = CodeResponse.model_validate(args)
                         parsed.test_execution_result = last_test_output
                         

@@ -75,7 +75,7 @@ def test_truncate_text_unicode() -> None:
 
     emoji_text = "🐍" * 10  # 10 characters
     result = truncate_text(emoji_text, 5)
-    assert result == "🐍🐍🐍..."
+    assert result == "🐍🐍..."
     assert len(result) == 5
 
 
@@ -85,4 +85,4 @@ def test_truncate_text_type_errors() -> None:
     with pytest.raises(TypeError):
         truncate_text(None)  # type: ignore[arg-type]
     with pytest.raises(TypeError):
-        truncate_text("hello", "5
+        truncate_text("hello", "5")  # type: ignore[arg-type]

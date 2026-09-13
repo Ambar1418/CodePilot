@@ -18,7 +18,7 @@ class RAGContextBuilder:
         
         lines = ["Relevant repository code:\n"]
         total_len = 0
-        max_chars = 3500
+        max_chars = 1500
 
         for i, chunk in enumerate(sorted_chunks):
             chunk_lines = [
