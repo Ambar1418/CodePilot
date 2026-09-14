@@ -18,29 +18,42 @@ Here is the JSON schema you must adhere to:
 {PlanResponse.model_json_schema()}
 """
         
-        try:
-            completion = self.client.chat.completions.create(
-                model=settings.llm_model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": task}
-                ],
-                response_format={"type": "json_object"},
-            )
-            content = completion.choices[0].message.content.strip()
-            if content.startswith("```"):
-                lines = content.splitlines()
-                if lines[0].startswith("```"):
-                    lines = lines[1:]
-                if lines and lines[-1].startswith("```"):
-                    lines = lines[:-1]
-                content = "\n".join(lines).strip()
-            
-            raw_dict = json.loads(content)
-            for key in ["steps", "assumptions", "files_to_inspect", "search_queries", "potential_risks", "testing_strategy", "affected_files", "affected_symbols", "affected_tests"]:
-                if key in raw_dict and isinstance(raw_dict[key], list):
-                    raw_dict[key] = [str(x) for x in raw_dict[key] if x is not None]
+        content = ""
+        for attempt in range(5):
+            try:
+                completion = self.client.chat.completions.create(
+                    model=settings.llm_model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": task}
+                    ],
+                    response_format={"type": "json_object"},
+                    max_tokens=800,
+                )
+                content = completion.choices[0].message.content.strip()
+                break
+            except groq.RateLimitError as e:
+                if attempt == 4:
+                    raise RuntimeError(f"Rate limit exceeded after retries: {str(e)}")
+                import time
+                time.sleep(10 * (attempt + 1))
+            except Exception as e:
+                raise RuntimeError(f"Failed to generate plan from LLM: {str(e)}")
 
-            return PlanResponse.model_validate(raw_dict)
-        except Exception as e:
-            raise RuntimeError(f"Failed to generate plan from LLM: {str(e)}")
+        if not content:
+            raise RuntimeError("Empty response from LLM planner")
+
+        if content.startswith("```"):
+            lines = content.splitlines()
+            if lines[0].startswith("```"):
+                lines = lines[1:]
+            if lines and lines[-1].startswith("```"):
+                lines = lines[:-1]
+            content = "\n".join(lines).strip()
+        
+        raw_dict = json.loads(content)
+        for key in ["steps", "assumptions", "files_to_inspect", "search_queries", "potential_risks", "testing_strategy", "affected_files", "affected_symbols", "affected_tests"]:
+            if key in raw_dict and isinstance(raw_dict[key], list):
+                raw_dict[key] = [str(x) for x in raw_dict[key] if x is not None]
+
+        return PlanResponse.model_validate(raw_dict)

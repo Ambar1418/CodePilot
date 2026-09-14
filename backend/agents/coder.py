@@ -89,15 +89,24 @@ CRITICAL RULES:
             if consecutive_errors > 3:
                 raise RuntimeError("Too many consecutive tool errors. Aborting.")
                 
-            try:
-                completion = self.client.chat.completions.create(
-                    model=settings.llm_model,
-                    messages=messages,
-                    tools=tools,
-                    tool_choice="auto"
-                )
-            except Exception as e:
-                raise RuntimeError(f"API Error: {str(e)}")
+            completion = None
+            for attempt in range(5):
+                try:
+                    completion = self.client.chat.completions.create(
+                        model=settings.llm_model,
+                        messages=messages,
+                        tools=tools,
+                        tool_choice="auto",
+                        max_tokens=800,
+                    )
+                    break
+                except groq.RateLimitError as e:
+                    if attempt == 4:
+                        raise RuntimeError(f"API Error (Rate Limit): {str(e)}")
+                    import time
+                    time.sleep(12 * (attempt + 1))
+                except Exception as e:
+                    raise RuntimeError(f"API Error: {str(e)}")
                 
             response_message = completion.choices[0].message
             messages.append(response_message)

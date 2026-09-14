@@ -34,16 +34,23 @@ Sandbox STDERR:
 {request.stderr}
 """
 
-        try:
-            completion = self.client.chat.completions.create(
-                model=settings.llm_model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_message}
-                ],
-                response_format={"type": "json_object"},
-            )
-            content = completion.choices[0].message.content
-            return DebugResponse.model_validate_json(content)
-        except Exception as e:
-            raise RuntimeError(f"Failed to generate debug analysis from LLM: {str(e)}")
+        for attempt in range(5):
+            try:
+                completion = self.client.chat.completions.create(
+                    model=settings.llm_model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_message}
+                    ],
+                    response_format={"type": "json_object"},
+                    max_tokens=800,
+                )
+                content = completion.choices[0].message.content
+                return DebugResponse.model_validate_json(content)
+            except groq.RateLimitError as e:
+                if attempt == 4:
+                    raise RuntimeError(f"Rate limit exceeded in DebugAgent: {str(e)}")
+                import time
+                time.sleep(12 * (attempt + 1))
+            except Exception as e:
+                raise RuntimeError(f"Failed to generate debug analysis from LLM: {str(e)}")
