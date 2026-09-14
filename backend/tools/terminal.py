@@ -2,7 +2,7 @@ import subprocess
 from backend.tools.filesystem import get_workspace_root
 from backend.tools.registry import registry
 
-ALLOWED_COMMANDS = ["pytest", "python", "python3", "pip", "git", "ls", "pwd"]
+ALLOWED_COMMANDS = ["pytest", "python", "python3", "pip", "git", "ls", "pwd", "mkdir", "touch", "cat", "echo", "cp", "mv", "grep", "head", "tail", "find"]
 DANGEROUS_FLAGS = ["rm", "sudo", "shutdown", "reboot", "mkfs", ".."]
 
 def validate_command(command: str):

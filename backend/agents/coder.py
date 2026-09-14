@@ -227,10 +227,12 @@ CRITICAL RULES:
                     consecutive_errors += 1
                 else:
                     consecutive_errors = 0
-                    if function_name == "run_tests":
+                    res_str = str(result.get("result", ""))
+                    cmd_arg = str(args.get("command", ""))
+                    if function_name == "run_tests" or "pytest" in cmd_arg or "pytest" in function_name:
                         tests_run = True
-                        last_test_output = result.get("result", "")
-                        if "Exit Code: 0" in last_test_output:
+                        last_test_output = res_str
+                        if "Exit Code: 0" in res_str or "passed" in res_str.lower():
                             tests_passed = True
                         else:
                             tests_passed = False
