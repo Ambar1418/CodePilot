@@ -10,11 +10,19 @@ class DebugAgent:
         self.client = groq.Groq(api_key=settings.groq_api_key)
 
     def analyze(self, request: DebugRequest) -> DebugResponse:
-        system_prompt = f"""You are the Debug Agent for CodePilot.
+        system_prompt = """You are the Debug Agent for CodePilot.
 Your job is to analyze test failures and execution errors and provide a structured diagnosis and fix.
-The output MUST exactly match the required structured JSON format.
-Here is the JSON schema you must adhere to:
-{DebugResponse.model_json_schema()}
+The output MUST exactly match the required structured JSON format below:
+
+{
+  "diagnosis": "<diagnosis>",
+  "root_cause": "<root_cause>",
+  "affected_files": ["<file_path>"],
+  "recommended_changes": ["<change>"],
+  "confidence": 0.9,
+  "proposed_fix": "<proposed_fix>",
+  "updated_instructions": "<updated_instructions>"
+}
 """
         
         user_message = f"""
