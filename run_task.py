@@ -7,6 +7,8 @@ import json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from backend.orchestrator import CodePilotOrchestrator
+from backend.models.schemas import OrchestrateRequest
+from backend.state.store import StateStore
 
 def main():
     if len(sys.argv) < 2:
@@ -19,43 +21,50 @@ def main():
     print(f"Task Prompt: {prompt}")
     print("=" * 70)
 
+    repo_path = os.getcwd()
+    request = OrchestrateRequest(
+        task=prompt,
+        repository_path=repo_path,
+        sandbox_type="local"
+    )
+
     orchestrator = CodePilotOrchestrator()
-    state = orchestrator.process_task(task_description=prompt)
+    response = orchestrator.run(request)
+    change_set = StateStore.get_change(response.change_id)
 
     print("\n" + "=" * 70)
     print("📌 TASK EXECUTION SUMMARY")
-    print(f"Task ID     : {state.task_id}")
-    print(f"Final State : {state.state.value}")
-    
-    if state.plan:
-        print(f"\n📋 Plan Summary: {state.plan.task_summary}")
-        if state.plan.steps:
-            print("Steps:")
-            for s in state.plan.steps:
-                print(f"  - {s}")
+    print(f"Change ID   : {response.change_id}")
+    print(f"Final State : {response.status.value if hasattr(response.status, 'value') else response.status}")
+    print(f"Attempts    : {response.attempts}")
 
-    if state.code_changes:
+    if change_set and change_set.code_result:
+        code = change_set.code_result
         print(f"\n💻 Proposed Code Changes:")
-        print(f"Summary: {state.code_changes.summary}")
-        print(f"Reasoning: {state.code_changes.reasoning}")
-        print(f"Files Modified: {state.code_changes.files_to_modify}")
-        print(f"Files Created : {state.code_changes.files_to_create}")
-        print(f"Files Deleted : {state.code_changes.files_to_delete}")
-        
-        if state.code_changes.changes:
-            print("\nDiff Details:")
-            for change in state.code_changes.changes:
-                print(f"\n--- [{change.change_type.upper()}] {change.file_path} ---")
-                print(change.diff)
+        print(f"Summary: {code.summary}")
+        print(f"Reasoning: {code.reasoning}")
+        print(f"Files Modified: {code.files_to_modify}")
+        print(f"Files Created : {code.files_to_create}")
+        print(f"Files Deleted : {code.files_to_delete}")
 
-    if state.test_result:
-        print(f"\n🧪 Test Results:")
-        print(f"Passed    : {state.test_result.passed}")
-        print(f"Exit Code : {state.test_result.exit_code}")
-        print(f"Output    :\n{state.test_result.output}")
+    if response.files_changed:
+        print(f"\n📄 Files Changed ({len(response.files_changed)}):")
+        for f in response.files_changed:
+            print(f"  - {f}")
 
-    if state.error_message:
-        print(f"\n❌ Error: {state.error_message}")
+    if response.diff:
+        print(f"\n📝 Git Diff:\n{response.diff}")
+
+    if response.validation:
+        val = response.validation
+        print(f"\n🧪 Validation Result:")
+        print(f"Passed    : {val.passed}")
+        print(f"Exit Code : {val.exit_code}")
+        if val.stdout:
+            print(f"Output    :\n{val.stdout}")
+
+    if change_set and change_set.final_diagnosis:
+        print(f"\n❌ Final Diagnosis: {change_set.final_diagnosis}")
 
     print("=" * 70)
 
