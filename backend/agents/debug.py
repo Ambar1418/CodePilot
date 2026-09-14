@@ -59,6 +59,13 @@ Sandbox STDERR:
                 if attempt == 4:
                     raise RuntimeError(f"Rate limit exceeded in DebugAgent: {str(e)}")
                 import time
-                time.sleep(12 * (attempt + 1))
+                time.sleep(15 * (attempt + 1))
             except Exception as e:
+                err_msg = str(e).lower()
+                if "413" in err_msg or "429" in err_msg or "rate_limit" in err_msg or "request too large" in err_msg:
+                    if attempt == 4:
+                        raise RuntimeError(f"Rate limit exceeded in DebugAgent: {str(e)}")
+                    import time
+                    time.sleep(15 * (attempt + 1))
+                    continue
                 raise RuntimeError(f"Failed to generate debug analysis from LLM: {str(e)}")

@@ -47,8 +47,15 @@ DO NOT invoke or output any tool calls or function calls. Output ONLY a valid JS
                 if attempt == 4:
                     raise RuntimeError(f"Rate limit exceeded after retries: {str(e)}")
                 import time
-                time.sleep(10 * (attempt + 1))
+                time.sleep(15 * (attempt + 1))
             except Exception as e:
+                err_msg = str(e).lower()
+                if "413" in err_msg or "429" in err_msg or "rate_limit" in err_msg or "request too large" in err_msg:
+                    if attempt == 4:
+                        raise RuntimeError(f"Rate limit exceeded after retries: {str(e)}")
+                    import time
+                    time.sleep(15 * (attempt + 1))
+                    continue
                 raise RuntimeError(f"Failed to generate plan from LLM: {str(e)}")
 
         if not content:
