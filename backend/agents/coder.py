@@ -93,9 +93,6 @@ CRITICAL RULES:
             if consecutive_errors > 3:
                 raise RuntimeError("Too many consecutive tool errors. Aborting.")
                 
-            if len(messages) > 10:
-                messages = [messages[0], messages[1]] + messages[-8:]
-
             completion = None
             for attempt in range(5):
                 try:
@@ -149,7 +146,18 @@ CRITICAL RULES:
                     continue
                     
                 if function_name == "submit_final_code":
-                    if not tests_run or not tests_passed:
+                    if not tests_run:
+                        # Auto-run tests for agent to verify workspace state
+                        from backend.tools.terminal import run_tests
+                        test_res = run_tests()
+                        tests_run = True
+                        last_test_output = test_res
+                        if "Exit Code: 0" in test_res or "passed" in test_res.lower():
+                            tests_passed = True
+                        else:
+                            tests_passed = False
+
+                    if not tests_passed:
                         messages.append({
                             "role": "tool",
                             "tool_call_id": tool_call.id,
@@ -157,8 +165,9 @@ CRITICAL RULES:
                             "content": json.dumps({
                                 "success": False,
                                 "tool": "submit_final_code",
-                                "error": "Cannot submit final code because tests have not passed.",
-                                "requirement": "Run tests and fix all failures before submitting."
+                                "error": "Cannot submit final code because unit tests failed.",
+                                "test_output": last_test_output,
+                                "requirement": "Fix the code or test failures before submitting."
                             })
                         })
                         continue
