@@ -56,9 +56,13 @@ CRITICAL RULES:
         plan_steps = "\n".join(f"- {step}" for step in request.plan.steps) if getattr(request.plan, 'steps', None) else ""
         plan_text = f"{plan_summary}\nSteps:\n{plan_steps}" if plan_steps else plan_summary
 
+        context = request.code_context
+        if len(context) > 1200:
+            context = context[:1200] + "\n...[TRUNCATED INITIAL CONTEXT]"
+
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Task: {request.task}\n\nPlan:\n{plan_text}\n\nInitial Context:\n{request.code_context}"}
+            {"role": "user", "content": f"Task: {request.task}\n\nPlan:\n{plan_text}\n\nInitial Context:\n{context}"}
         ]
 
         iterations = 0
@@ -89,6 +93,9 @@ CRITICAL RULES:
             if consecutive_errors > 3:
                 raise RuntimeError("Too many consecutive tool errors. Aborting.")
                 
+            if len(messages) > 10:
+                messages = [messages[0], messages[1]] + messages[-8:]
+
             completion = None
             for attempt in range(5):
                 try:
@@ -244,11 +251,15 @@ CRITICAL RULES:
                         else:
                             tests_passed = False
                             
+                tool_output_str = json.dumps(result)
+                if len(tool_output_str) > 1200:
+                    tool_output_str = tool_output_str[:600] + "\n...[TRUNCATED TOOL OUTPUT]...\n" + tool_output_str[-600:]
+
                 messages.append({
                     "role": "tool",
                     "tool_call_id": tool_call.id,
                     "name": function_name,
-                    "content": json.dumps(result)
+                    "content": tool_output_str
                 })
 
         raise RuntimeError(f"Max iterations ({self.max_iterations}) reached without submitting final code.")
